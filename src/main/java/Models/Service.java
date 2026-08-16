@@ -2,25 +2,25 @@ package Models;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Entity
-@Table(name = "client")
+@Table(name = "service")
 @Getter
 @Setter
-public class Client {
+public class Service {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @NotBlank
-    private String name;
+    private String serviceName;
 
-    @NotBlank
-    private String telephone;
-
-    private String cpfCnpj;
-
-    private String address;
+    @NotNull
+    @Column(name = "default_price", precision = 12, scale = 2)
+    private BigDecimal price;
 }

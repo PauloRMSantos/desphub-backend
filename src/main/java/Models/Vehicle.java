@@ -1,30 +1,41 @@
 package Models;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ForeignKey;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
 
 
 @Entity
+@Table(name = "vehicle")
+@Getter
+@Setter
 public class Vehicle {
     @Id
-    protected long id;
-    @Column
-    public String plate;
-    @Column
-    public String brand;
-    @Column
-    public String model;
-    @Column
-    public String fabricationAndModel;
-    @Column
-    public String color;
-    @Column
-    public String renavam;
-    @Column
-    public String chassis;
-    @Column
-    @ForeignKey
-    public long clientId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String plate;
+
+    @NotBlank
+    private String brand;
+
+    @NotBlank
+    private String model;
+
+    @NotBlank
+    private String fabricationAndModel;
+
+    @NotBlank
+    private String color;
+
+    private String renavam;
+
+    @NotBlank
+    private String chassis;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", nullable = true)
+    private Client client;
 }
