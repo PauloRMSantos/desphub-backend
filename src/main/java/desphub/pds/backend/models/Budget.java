@@ -1,10 +1,10 @@
-package Models;
+package desphub.pds.backend.models;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
-import Enum.StatusEnum;
+import desphub.pds.backend.enums.StatusEnum;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

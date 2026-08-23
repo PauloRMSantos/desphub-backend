@@ -1,10 +1,10 @@
-package Models;
+package desphub.pds.backend.models;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
-import Enum.OrderStatusEnum;
+import desphub.pds.backend.enums.OrderStatusEnum;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -23,6 +23,7 @@ public class ServiceOrder {
     private String code;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "status")
     private OrderStatusEnum orderStatus;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -33,7 +34,7 @@ public class ServiceOrder {
     @JoinColumn(name = "vehicle_id")
     private Vehicle vehicle;
 
-    @ManyToOne(fetch = FetchType.LAZY)    // nullable: OS pode nascer do zero
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "origin_budget_id")
     private Budget originBudget;
 

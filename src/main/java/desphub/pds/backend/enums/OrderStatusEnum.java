@@ -1,4 +1,4 @@
-package Enum;
+package desphub.pds.backend.enums;
 
 public enum OrderStatusEnum {
     ABERTA,

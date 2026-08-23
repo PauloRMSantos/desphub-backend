@@ -1,4 +1,4 @@
-package Models;
+package desphub.pds.backend.models;
 
 import jakarta.persistence.*;
 import lombok.Getter;
