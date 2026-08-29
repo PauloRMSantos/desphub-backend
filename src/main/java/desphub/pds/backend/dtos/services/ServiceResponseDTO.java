@@ -1,4 +1,4 @@
-package desphub.pds.backend.dtos;
+package desphub.pds.backend.dtos.services;
 
 import lombok.Getter;
 import lombok.Setter;

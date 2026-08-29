@@ -1,4 +1,4 @@
-package desphub.pds.backend.dtos;
+package desphub.pds.backend.dtos.serviceOrderItem;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 
 @Getter
 @Setter
-public class CreateBudgetItemDTO {
+public class CreateServiceOrderItemDTO {
 
     @NotNull
     private Long serviceId;

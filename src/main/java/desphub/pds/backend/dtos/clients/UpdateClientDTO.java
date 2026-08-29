@@ -1,4 +1,4 @@
-package desphub.pds.backend.dtos;
+package desphub.pds.backend.dtos.clients;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class CreateClientDTO {
+public class UpdateClientDTO {
 
     @NotBlank
     private String name;

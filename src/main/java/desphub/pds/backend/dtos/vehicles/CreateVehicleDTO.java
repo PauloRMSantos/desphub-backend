@@ -1,4 +1,4 @@
-package desphub.pds.backend.dtos;
+package desphub.pds.backend.dtos.vehicles;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;

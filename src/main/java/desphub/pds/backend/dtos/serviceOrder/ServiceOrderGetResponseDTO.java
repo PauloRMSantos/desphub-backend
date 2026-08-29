@@ -1,5 +1,6 @@
-package desphub.pds.backend.dtos;
+package desphub.pds.backend.dtos.serviceOrder;
 
+import desphub.pds.backend.dtos.serviceOrderItem.ServiceOrderItemResponseDTO;
 import desphub.pds.backend.enums.OrderStatusEnum;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,7 +10,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class ServiceOrderResponseDTO {
+public class ServiceOrderGetResponseDTO {
 
     private Long id;
     private String code;

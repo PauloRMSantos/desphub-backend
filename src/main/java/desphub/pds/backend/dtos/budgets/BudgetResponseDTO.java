@@ -1,5 +1,6 @@
-package desphub.pds.backend.dtos;
+package desphub.pds.backend.dtos.budgets;
 
+import desphub.pds.backend.dtos.budgetItens.BudgetItemResponseDTO;
 import desphub.pds.backend.enums.StatusEnum;
 import lombok.Getter;
 import lombok.Setter;

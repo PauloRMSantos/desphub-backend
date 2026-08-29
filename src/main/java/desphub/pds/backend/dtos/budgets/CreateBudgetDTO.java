@@ -1,5 +1,6 @@
-package desphub.pds.backend.dtos;
+package desphub.pds.backend.dtos.budgets;
 
+import desphub.pds.backend.dtos.budgetItens.CreateBudgetItemDTO;
 import desphub.pds.backend.enums.StatusEnum;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
