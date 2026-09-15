@@ -9,24 +9,24 @@ import org.springframework.web.client.ResourceAccessException;
 @RestControllerAdvice
 public class DetranExceptionHandler {
 
-    @ExceptionHandler(SessaoExpiradaException.class)
-    public ResponseEntity<IntegracaoErroDTO> handleSessaoExpirada(SessaoExpiradaException ex) {
+    @ExceptionHandler(SessionExpiredException.class)
+    public ResponseEntity<IntegrationErrorDTO> handleSessionExpired(SessionExpiredException ex) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-                .body(new IntegracaoErroDTO("RECONECTAR", ex.getMessage()));
+                .body(new IntegrationErrorDTO("RECONNECT", ex.getMessage()));
     }
 
     @ExceptionHandler(PortalException.class)
     public ResponseEntity<Object> handlePortal(PortalException ex) {
-        Object body = ex.getResposta() != null
-                ? ex.getResposta()
-                : new IntegracaoErroDTO("ERRO", ex.getMessage());
+        Object body = ex.getResponse() != null
+                ? ex.getResponse()
+                : new IntegrationErrorDTO("ERROR", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(body);
     }
 
     @ExceptionHandler(ResourceAccessException.class)
-    public ResponseEntity<IntegracaoErroDTO> handleRpaIndisponivel(ResourceAccessException ex) {
+    public ResponseEntity<IntegrationErrorDTO> handleRpaUnavailable(ResourceAccessException ex) {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                .body(new IntegracaoErroDTO("RPA_INDISPONIVEL",
+                .body(new IntegrationErrorDTO("RPA_UNAVAILABLE",
                         "Serviço de consulta veicular indisponível no momento"));
     }
 }

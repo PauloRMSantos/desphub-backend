@@ -1,9 +1,9 @@
 package desphub.pds.backend.integrations;
 
-import desphub.pds.backend.dtos.detran.ConsultaRequest;
-import desphub.pds.backend.dtos.detran.ConsultaResponse;
+import desphub.pds.backend.dtos.detran.VehicleQueryRequest;
+import desphub.pds.backend.dtos.detran.VehicleQueryResponse;
 import desphub.pds.backend.exceptions.PortalException;
-import desphub.pds.backend.exceptions.SessaoExpiradaException;
+import desphub.pds.backend.exceptions.SessionExpiredException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -17,15 +17,15 @@ import java.util.List;
 @Component
 public class RpaDetranClient {
 
-    private static final List<String> TIPOS_PADRAO =
-            List.of("DADOS_CADASTRAIS", "DEBITOS", "RESTRICOES", "LICENCIAMENTO");
+    private static final List<String> DEFAULT_TYPES =
+            List.of("REGISTRATION", "DEBTS", "RESTRICTIONS", "LICENSING");
 
     private final RestClient http;
 
     public RpaDetranClient(@Value("${rpa.base-url}") String baseUrl) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofSeconds(5));
-        factory.setReadTimeout(Duration.ofSeconds(60));
+        factory.setReadTimeout(Duration.ofSeconds(60)); // a consulta pode demorar
 
         this.http = RestClient.builder()
                 .baseUrl(baseUrl)
@@ -33,29 +33,29 @@ public class RpaDetranClient {
                 .build();
     }
 
-    public ConsultaResponse consultar(String placa, String renavam) {
+    public VehicleQueryResponse query(String plate, String renavam) {
         return http.post()
-                .uri("/api/detran/consultas")
+                .uri("/api/detran/queries")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new ConsultaRequest(placa, renavam, TIPOS_PADRAO))
+                .body(new VehicleQueryRequest(plate, renavam, DEFAULT_TYPES))
                 .exchange((request, response) -> {
                     HttpStatusCode status = response.getStatusCode();
 
                     if (status.value() == 503) {
-                        throw new SessaoExpiradaException("Conexão com o DETRAN expirou — reconecte o gov.br");
+                        throw new SessionExpiredException("Conexão com o DETRAN expirou — reconecte o gov.br");
                     }
 
                     if (status.isError()) {
-                        ConsultaResponse corpoErro;
+                        VehicleQueryResponse errorBody;
                         try {
-                            corpoErro = response.bodyTo(ConsultaResponse.class);
+                            errorBody = response.bodyTo(VehicleQueryResponse.class);
                         } catch (RuntimeException e) {
-                            corpoErro = null;
+                            errorBody = null;
                         }
-                        throw new PortalException(corpoErro);
+                        throw new PortalException(errorBody);
                     }
 
-                    return response.bodyTo(ConsultaResponse.class);
+                    return response.bodyTo(VehicleQueryResponse.class);
                 });
     }
 }
