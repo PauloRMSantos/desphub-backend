@@ -1,24 +1,24 @@
 package desphub.pds.backend.exceptions;
 
-import desphub.pds.backend.dtos.detran.ConsultaResponse;
+import desphub.pds.backend.dtos.detran.VehicleQueryResponse;
 
 public class PortalException extends RuntimeException {
 
-    private final transient ConsultaResponse resposta;
+    private final transient VehicleQueryResponse response;
 
-    public PortalException(ConsultaResponse resposta) {
-        super(mensagemDe(resposta));
-        this.resposta = resposta;
+    public PortalException(VehicleQueryResponse response) {
+        super(buildMessage(response));
+        this.response = response;
     }
 
-    public ConsultaResponse getResposta() {
-        return resposta;
+    public VehicleQueryResponse getResponse() {
+        return response;
     }
 
-    private static String mensagemDe(ConsultaResponse r) {
-        if (r != null && r.erros() != null && !r.erros().isEmpty()) {
-            var erro = r.erros().get(0);
-            return "Falha no portal DETRAN (" + erro.etapa() + "): " + erro.mensagem();
+    private static String buildMessage(VehicleQueryResponse response) {
+        if (response != null && response.errors() != null && !response.errors().isEmpty()) {
+            var error = response.errors().get(0);
+            return "Falha no portal DETRAN (" + error.step() + "): " + error.message();
         }
         return "Falha ao consultar o portal DETRAN";
     }

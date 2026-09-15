@@ -1,6 +1,6 @@
 package desphub.pds.backend.controllers;
 
-import desphub.pds.backend.dtos.detran.ConsultaResponse;
+import desphub.pds.backend.dtos.detran.VehicleQueryResponse;
 import desphub.pds.backend.integrations.RpaDetranClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,22 +12,22 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/vehicles")
-public class ConsultaVeicularController {
+public class VehicleQueryController {
 
     private final RpaDetranClient rpaDetranClient;
 
-    public ConsultaVeicularController(RpaDetranClient rpaDetranClient) {
+    public VehicleQueryController(RpaDetranClient rpaDetranClient) {
         this.rpaDetranClient = rpaDetranClient;
     }
 
-    // GET /api/vehicles/consulta?placa=XXX&renavam=XXX
-    @GetMapping("/consulta")
-    public ResponseEntity<ConsultaResponse> consultar(@RequestParam(required = false) String placa,
+    // GET /api/vehicles/query?plate=ABC1234&renavam=2345
+    @GetMapping("/query")
+    public ResponseEntity<VehicleQueryResponse> query(@RequestParam(required = false) String plate,
                                                       @RequestParam(required = false) String renavam) {
-        if (isBlank(placa) && isBlank(renavam)) {
+        if (isBlank(plate) && isBlank(renavam)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe placa ou renavam");
         }
-        return ResponseEntity.ok(rpaDetranClient.consultar(placa, renavam));
+        return ResponseEntity.ok(rpaDetranClient.query(plate, renavam));
     }
 
     private static boolean isBlank(String value) {
