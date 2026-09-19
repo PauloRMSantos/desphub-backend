@@ -13,7 +13,8 @@ public record VehicleQueryResponse(
         Licensing licensing,
         Violations violations,
         List<Restriction> restrictions,
-        List<Debt> debts,
+        List<TaxEntry> taxes,      // histórico completo de IPVA (todos os anos)
+        List<Debt> debts,          // só o que está devido agora (IPVA + DPVAT)
         String status,
         List<StepError> errors
 ) {
