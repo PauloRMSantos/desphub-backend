@@ -1,0 +1,19 @@
+package desphub.pds.backend.enums;
+
+public enum Permission {
+    CLIENTS_READ,
+    CLIENTS_WRITE,
+    VEHICLES_READ,
+    VEHICLES_WRITE,
+    SERVICES_READ,
+    SERVICES_WRITE,
+    BUDGETS_READ,
+    BUDGETS_WRITE,
+    SERVICE_ORDERS_READ,
+    SERVICE_ORDERS_WRITE,
+    FINANCIAL_READ,
+    FINANCIAL_WRITE,
+    VEHICLE_QUERY,   // consulta detran
+    NFE_IMPORT,
+    USERS_MANAGE
+}
