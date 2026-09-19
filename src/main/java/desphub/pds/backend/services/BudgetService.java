@@ -13,13 +13,14 @@ import desphub.pds.backend.models.Service;
 import desphub.pds.backend.repositories.IBudgetRepository;
 import desphub.pds.backend.repositories.IClientRepository;
 import desphub.pds.backend.repositories.IServiceRepository;
+import desphub.pds.backend.security.CurrentUser;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.util.List;
 
-// "Service" (entidade) colide com a anotação @Service do Spring, por isso qualificada
 @org.springframework.stereotype.Service
 public class BudgetService {
 
@@ -27,23 +28,27 @@ public class BudgetService {
     private final IClientRepository clientRepository;
     private final IServiceRepository serviceRepository;
     private final BudgetMapper budgetMapper;
+    private final CurrentUser currentUser;
 
     public BudgetService(IBudgetRepository budgetRepository,
                          IClientRepository clientRepository,
                          IServiceRepository serviceRepository,
-                         BudgetMapper budgetMapper) {
+                         BudgetMapper budgetMapper,
+                         CurrentUser currentUser) {
         this.budgetRepository = budgetRepository;
         this.clientRepository = clientRepository;
         this.serviceRepository = serviceRepository;
         this.budgetMapper = budgetMapper;
+        this.currentUser = currentUser;
     }
 
     @Transactional
     public BudgetResponseDTO create(CreateBudgetDTO dto) {
         Budget budget = new Budget();
+        budget.setOfficeId(currentUser.requireOfficeId());
         budget.setCode(dto.getCode());
         budget.setStatus(dto.getStatus());
-        budget.setTotalPrice(dto.getTotalPrice());
+        budget.setTotalPrice(dto.getTotalPrice() != null ? dto.getTotalPrice() : BigDecimal.ZERO);
         budget.setClient(resolveClient(dto.getClientId()));
         applyItems(budget, dto.getItems());
         return budgetMapper.toResponse(budgetRepository.save(budget));
@@ -66,7 +71,7 @@ public class BudgetService {
         Budget budget = findEntityOr404(id);
         budget.setCode(dto.getCode());
         budget.setStatus(dto.getStatus());
-        budget.setTotalPrice(dto.getTotalPrice());
+        budget.setTotalPrice(dto.getTotalPrice() != null ? dto.getTotalPrice() : BigDecimal.ZERO);
         budget.setClient(resolveClient(dto.getClientId()));
         applyItems(budget, dto.getItems());
         return budgetMapper.toResponse(budgetRepository.save(budget));
@@ -74,17 +79,14 @@ public class BudgetService {
 
     @Transactional
     public void delete(Long id) {
-        if (!budgetRepository.existsById(id)) {
-            throw notFound(id);
-        }
-        budgetRepository.deleteById(id);
+        budgetRepository.delete(findEntityOr404(id));
     }
 
-    // limpa os itens atuais e reconstrói a partir do DTO (orphanRemoval apaga os antigos)
+    // limpa os itens e reconstrói; cada serviço tem que ser do mesmo escritório
     private void applyItems(Budget budget, List<CreateBudgetItemDTO> itemDtos) {
         budget.getItems().clear();
         for (CreateBudgetItemDTO itemDto : itemDtos) {
-            Service service = serviceRepository.findById(itemDto.getServiceId())
+            Service service = serviceRepository.findByIdAndOfficeId(itemDto.getServiceId(), currentUser.requireOfficeId())
                     .orElseThrow(() -> new ResponseStatusException(
                             HttpStatus.NOT_FOUND, "Serviço não encontrado: " + itemDto.getServiceId()));
 
@@ -97,18 +99,21 @@ public class BudgetService {
         }
     }
 
-    // clientId é opcional: null significa orçamento sem cliente vinculado
+    // clientId opcional; quando presente, tem que ser do mesmo escritório
     private Client resolveClient(Long clientId) {
         if (clientId == null) {
             return null;
         }
-        return clientRepository.findById(clientId)
+        return clientRepository.findByIdAndOfficeId(clientId, currentUser.requireOfficeId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Cliente não encontrado: " + clientId));
     }
 
     private Budget findEntityOr404(Long id) {
-        return budgetRepository.findById(id).orElseThrow(() -> notFound(id));
+        if (currentUser.isAdmin()) {
+            return budgetRepository.findById(id).orElseThrow(() -> notFound(id));
+        }
+        return budgetRepository.findByIdAndOfficeId(id, currentUser.officeId()).orElseThrow(() -> notFound(id));
     }
 
     private ResponseStatusException notFound(Long id) {

@@ -5,6 +5,7 @@ import desphub.pds.backend.dtos.serviceOrder.ServiceOrderGetResponseDTO;
 import desphub.pds.backend.dtos.serviceOrder.ServiceOrderResponseDTO;
 import desphub.pds.backend.dtos.serviceOrder.UpdateServiceOrderDTO;
 import desphub.pds.backend.dtos.serviceOrderItem.CreateServiceOrderItemDTO;
+import desphub.pds.backend.enums.OrderStatusEnum;
 import desphub.pds.backend.mappers.ServiceOrderMapper;
 import desphub.pds.backend.models.Budget;
 import desphub.pds.backend.models.Client;
@@ -17,13 +18,14 @@ import desphub.pds.backend.repositories.IClientRepository;
 import desphub.pds.backend.repositories.IServiceOrderRepository;
 import desphub.pds.backend.repositories.IServiceRepository;
 import desphub.pds.backend.repositories.IVehicleRepository;
+import desphub.pds.backend.security.CurrentUser;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.util.List;
 
-// "Service" (entidade) colide com a anotação @Service do Spring, por isso qualificada
 @org.springframework.stereotype.Service
 public class ServiceOrderService {
 
@@ -33,24 +35,28 @@ public class ServiceOrderService {
     private final IBudgetRepository budgetRepository;
     private final IServiceRepository serviceRepository;
     private final ServiceOrderMapper serviceOrderMapper;
+    private final CurrentUser currentUser;
 
     public ServiceOrderService(IServiceOrderRepository serviceOrderRepository,
                                IClientRepository clientRepository,
                                IVehicleRepository vehicleRepository,
                                IBudgetRepository budgetRepository,
                                IServiceRepository serviceRepository,
-                               ServiceOrderMapper serviceOrderMapper) {
+                               ServiceOrderMapper serviceOrderMapper,
+                               CurrentUser currentUser) {
         this.serviceOrderRepository = serviceOrderRepository;
         this.clientRepository = clientRepository;
         this.vehicleRepository = vehicleRepository;
         this.budgetRepository = budgetRepository;
         this.serviceRepository = serviceRepository;
         this.serviceOrderMapper = serviceOrderMapper;
+        this.currentUser = currentUser;
     }
 
     @Transactional
     public ServiceOrderResponseDTO create(CreateServiceOrderDTO dto) {
         ServiceOrder order = new ServiceOrder();
+        order.setOfficeId(currentUser.requireOfficeId());
         applyFields(order, dto.getCode(), dto.getOrderStatus(), dto.getClientId(), dto.getVehicleId(),
                 dto.getOriginBudgetId(), dto.getServicesTotal(), dto.getFeesTotal(), dto.getTotal());
         applyItems(order, dto.getItems());
@@ -80,31 +86,26 @@ public class ServiceOrderService {
 
     @Transactional
     public void delete(Long id) {
-        if (!serviceOrderRepository.existsById(id)) {
-            throw notFound(id);
-        }
-        serviceOrderRepository.deleteById(id);
+        serviceOrderRepository.delete(findEntityOr404(id));
     }
 
-    private void applyFields(ServiceOrder order, String code, desphub.pds.backend.enums.OrderStatusEnum status,
+    private void applyFields(ServiceOrder order, String code, OrderStatusEnum status,
                              Long clientId, Long vehicleId, Long originBudgetId,
-                             java.math.BigDecimal servicesTotal, java.math.BigDecimal feesTotal,
-                             java.math.BigDecimal total) {
+                             BigDecimal servicesTotal, BigDecimal feesTotal, BigDecimal total) {
         order.setCode(code);
         order.setOrderStatus(status);
         order.setClient(resolveClient(clientId));
         order.setVehicle(resolveVehicle(vehicleId));
         order.setOriginBudget(resolveBudget(originBudgetId));
-        order.setServicesTotal(servicesTotal);
-        order.setFeesTotal(feesTotal);
-        order.setTotal(total);
+        order.setServicesTotal(servicesTotal != null ? servicesTotal : BigDecimal.ZERO);
+        order.setFeesTotal(feesTotal != null ? feesTotal : BigDecimal.ZERO);
+        order.setTotal(total != null ? total : BigDecimal.ZERO);
     }
 
-    // limpa os itens atuais e reconstrói a partir do DTO (orphanRemoval apaga os antigos)
     private void applyItems(ServiceOrder order, List<CreateServiceOrderItemDTO> itemDtos) {
         order.getItems().clear();
         for (CreateServiceOrderItemDTO itemDto : itemDtos) {
-            Service service = serviceRepository.findById(itemDto.getServiceId())
+            Service service = serviceRepository.findByIdAndOfficeId(itemDto.getServiceId(), currentUser.requireOfficeId())
                     .orElseThrow(() -> new ResponseStatusException(
                             HttpStatus.NOT_FOUND, "Serviço não encontrado: " + itemDto.getServiceId()));
 
@@ -112,34 +113,36 @@ public class ServiceOrderService {
             item.setService(service);
             item.setQuantity(itemDto.getQuantity());
             item.setUnitPrice(itemDto.getUnitPrice());
-            order.addItem(item); // já seta o back-reference (item.setOrder(this))
+            order.addItem(item);
         }
     }
 
     private Client resolveClient(Long clientId) {
-        return clientRepository.findById(clientId)
+        return clientRepository.findByIdAndOfficeId(clientId, currentUser.requireOfficeId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Cliente não encontrado: " + clientId));
     }
 
     private Vehicle resolveVehicle(Long vehicleId) {
-        return vehicleRepository.findById(vehicleId)
+        return vehicleRepository.findByIdAndOfficeId(vehicleId, currentUser.requireOfficeId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Veículo não encontrado: " + vehicleId));
     }
 
-    // originBudgetId é opcional: null significa OS sem orçamento de origem
     private Budget resolveBudget(Long originBudgetId) {
         if (originBudgetId == null) {
             return null;
         }
-        return budgetRepository.findById(originBudgetId)
+        return budgetRepository.findByIdAndOfficeId(originBudgetId, currentUser.requireOfficeId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Orçamento não encontrado: " + originBudgetId));
     }
 
     private ServiceOrder findEntityOr404(Long id) {
-        return serviceOrderRepository.findById(id).orElseThrow(() -> notFound(id));
+        if (currentUser.isAdmin()) {
+            return serviceOrderRepository.findById(id).orElseThrow(() -> notFound(id));
+        }
+        return serviceOrderRepository.findByIdAndOfficeId(id, currentUser.officeId()).orElseThrow(() -> notFound(id));
     }
 
     private ResponseStatusException notFound(Long id) {
