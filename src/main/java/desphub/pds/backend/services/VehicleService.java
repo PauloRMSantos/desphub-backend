@@ -9,6 +9,7 @@ import desphub.pds.backend.models.Client;
 import desphub.pds.backend.models.Vehicle;
 import desphub.pds.backend.repositories.IClientRepository;
 import desphub.pds.backend.repositories.IVehicleRepository;
+import desphub.pds.backend.security.CurrentUser;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,18 +23,22 @@ public class VehicleService {
     private final IVehicleRepository vehicleRepository;
     private final IClientRepository clientRepository;
     private final VehicleMapper vehicleMapper;
+    private final CurrentUser currentUser;
 
     public VehicleService(IVehicleRepository vehicleRepository,
                           IClientRepository clientRepository,
-                          VehicleMapper vehicleMapper) {
+                          VehicleMapper vehicleMapper,
+                          CurrentUser currentUser) {
         this.vehicleRepository = vehicleRepository;
         this.clientRepository = clientRepository;
         this.vehicleMapper = vehicleMapper;
+        this.currentUser = currentUser;
     }
 
     @Transactional
     public VehicleResponseDTO create(CreateVehicleDTO dto) {
         Vehicle vehicle = vehicleMapper.toEntity(dto);
+        vehicle.setOfficeId(currentUser.requireOfficeId());
         vehicle.setClient(resolveClient(dto.getClientId()));
         return vehicleMapper.toResponse(vehicleRepository.save(vehicle));
     }
@@ -60,24 +65,24 @@ public class VehicleService {
 
     @Transactional
     public void delete(Long id) {
-        if (!vehicleRepository.existsById(id)) {
-            throw notFound(id);
-        }
-        vehicleRepository.deleteById(id);
+        vehicleRepository.delete(findEntityOr404(id));
     }
 
-    // clientId é opcional: null significa veículo sem dono
+    // cliente do veículo tem que ser do mesmo escritório (opcional: null = sem dono)
     private Client resolveClient(Long clientId) {
         if (clientId == null) {
             return null;
         }
-        return clientRepository.findById(clientId)
+        return clientRepository.findByIdAndOfficeId(clientId, currentUser.requireOfficeId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Cliente não encontrado: " + clientId));
     }
 
     private Vehicle findEntityOr404(Long id) {
-        return vehicleRepository.findById(id).orElseThrow(() -> notFound(id));
+        if (currentUser.isAdmin()) {
+            return vehicleRepository.findById(id).orElseThrow(() -> notFound(id));
+        }
+        return vehicleRepository.findByIdAndOfficeId(id, currentUser.officeId()).orElseThrow(() -> notFound(id));
     }
 
     private ResponseStatusException notFound(Long id) {

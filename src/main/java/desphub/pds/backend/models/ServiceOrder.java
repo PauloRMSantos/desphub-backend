@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 import desphub.pds.backend.enums.OrderStatusEnum;
+import org.hibernate.annotations.Filter;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -14,10 +15,14 @@ import java.util.List;
 @Table(name = "service_order")
 @Getter
 @Setter
+@Filter(name = "officeFilter", condition = "office_id = :officeId")
 public class ServiceOrder {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
+
+    @Column(name = "office_id", nullable = false)
+    private Long officeId;
 
     @NotBlank
     private String code;

@@ -4,28 +4,31 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.Instant;
 
 @Entity
-@Table(name = "client")
+@Table(name = "office")
 @Getter
 @Setter
-@Filter(name = "officeFilter", condition = "office_id = :officeId")
-public class Client {
+public class Office {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(name = "office_id", nullable = false)
-    private Long officeId;
 
     @NotBlank
     private String name;
 
     @NotBlank
-    private String telephone;
-
+    @Column(name = "cpf_cnpj")
     private String cpfCnpj;
 
-    private String address;
+    @Column(nullable = false)
+    private boolean active = true;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
 }

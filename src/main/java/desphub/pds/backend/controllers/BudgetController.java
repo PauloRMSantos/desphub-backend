@@ -8,6 +8,7 @@ import desphub.pds.backend.services.BudgetService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,28 +31,33 @@ public class BudgetController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('BUDGETS_WRITE')")
     public ResponseEntity<BudgetResponseDTO> create(@Valid @RequestBody CreateBudgetDTO dto) {
         BudgetResponseDTO created = budgetService.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('BUDGETS_READ')")
     public ResponseEntity<List<BudgetGetResponseDTO>> findAll() {
         return ResponseEntity.ok(budgetService.findAll());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('BUDGETS_READ')")
     public ResponseEntity<BudgetGetResponseDTO> findById(@PathVariable Long id) {
         return ResponseEntity.ok(budgetService.findById(id));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('BUDGETS_WRITE')")
     public ResponseEntity<BudgetResponseDTO> update(@PathVariable Long id,
                                                     @Valid @RequestBody UpdateBudgetDTO dto) {
         return ResponseEntity.ok(budgetService.update(id, dto));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('BUDGETS_WRITE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         budgetService.delete(id);
         return ResponseEntity.noContent().build();

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Filter;
 
 import java.math.BigDecimal;
 
@@ -12,10 +13,14 @@ import java.math.BigDecimal;
 @Table(name = "service")
 @Getter
 @Setter
+@Filter(name = "officeFilter", condition = "office_id = :officeId")
 public class Service {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "office_id", nullable = false)
+    private Long officeId;
 
     @NotBlank
     @Column(name = "name")

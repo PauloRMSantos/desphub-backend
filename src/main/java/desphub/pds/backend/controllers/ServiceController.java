@@ -8,6 +8,7 @@ import desphub.pds.backend.services.ServiceService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,28 +31,33 @@ public class ServiceController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('SERVICES_WRITE')")
     public ResponseEntity<ServiceResponseDTO> create(@Valid @RequestBody CreateServiceDTO dto) {
         ServiceResponseDTO created = serviceService.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('SERVICES_READ')")
     public ResponseEntity<List<ServiceGetResponseDTO>> findAll() {
         return ResponseEntity.ok(serviceService.findAll());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('SERVICES_READ')")
     public ResponseEntity<ServiceGetResponseDTO> findById(@PathVariable Long id) {
         return ResponseEntity.ok(serviceService.findById(id));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('SERVICES_WRITE')")
     public ResponseEntity<ServiceResponseDTO> update(@PathVariable Long id,
                                                      @Valid @RequestBody UpdateServiceDTO dto) {
         return ResponseEntity.ok(serviceService.update(id, dto));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('SERVICES_WRITE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         serviceService.delete(id);
         return ResponseEntity.noContent().build();

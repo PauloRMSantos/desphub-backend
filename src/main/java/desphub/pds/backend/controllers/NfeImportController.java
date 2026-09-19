@@ -5,6 +5,7 @@ import desphub.pds.backend.services.NfeImportService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -14,10 +15,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 
-/**
- * Importação de NF-e (via PDF da DANFE) para PRÉ-PREENCHER um veículo (prévia,
- * não persiste). O usuário revisa/completa e depois chama POST /api/vehicles.
- */
 @RestController
 @RequestMapping("/api/vehicles/nfe")
 public class NfeImportController {
@@ -28,8 +25,8 @@ public class NfeImportController {
         this.nfeImportService = nfeImportService;
     }
 
-    // POST /api/vehicles/nfe/pdf  (multipart/form-data, campo "file")
     @PostMapping(value = "/pdf", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('NFE_IMPORT')")
     public ResponseEntity<NfeImportResponseDTO> byPdf(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Envie o arquivo PDF no campo 'file'");
