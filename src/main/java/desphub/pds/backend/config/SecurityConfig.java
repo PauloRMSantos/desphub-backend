@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -29,11 +30,13 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
+                .cors(Customizer.withDefaults())   // usa o CorsConfigurationSource do CorsConfig
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/login",
+                                "/api/rpa/govbr-session",  // autenticado pelo pairing token, validado no controller
                                 "/error",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",

@@ -15,13 +15,18 @@ import java.util.Date;
 @Service
 public class JwtService {
 
+    public static final String TYPE_PAIRING = "pairing";
+
     private final SecretKey key;
     private final long expirationMs;
+    private final long pairingExpirationMs;
 
     public JwtService(@Value("${desphub.jwt.secret}") String secret,
-                      @Value("${desphub.jwt.expiration-minutes}") long expirationMinutes) {
+                      @Value("${desphub.jwt.expiration-minutes}") long expirationMinutes,
+                      @Value("${desphub.jwt.pairing-expiration-minutes:5}") long pairingExpirationMinutes) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expirationMs = expirationMinutes * 60_000L;
+        this.pairingExpirationMs = pairingExpirationMinutes * 60_000L;
     }
 
     public String generateToken(User user) {
@@ -35,6 +40,18 @@ public class JwtService {
                 .claim("email", user.getEmail())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusMillis(expirationMs)))
+                .signWith(key)
+                .compact();
+    }
+
+    public String generatePairingToken(Long userId, Long officeId) {
+        Instant now = Instant.now();
+        return Jwts.builder()
+                .subject(String.valueOf(userId))
+                .claim("officeId", officeId)
+                .claim("type", TYPE_PAIRING)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plusMillis(pairingExpirationMs)))
                 .signWith(key)
                 .compact();
     }

@@ -7,10 +7,11 @@ import desphub.pds.backend.exceptions.SessionExpiredException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.List;
 
@@ -23,8 +24,10 @@ public class RpaDetranClient {
     private final RestClient http;
 
     public RpaDetranClient(@Value("${rpa.base-url}") String baseUrl) {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(Duration.ofSeconds(5));
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(5))
+                .build();
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(client);
         factory.setReadTimeout(Duration.ofSeconds(60)); // a consulta pode demorar
 
         this.http = RestClient.builder()
@@ -33,11 +36,12 @@ public class RpaDetranClient {
                 .build();
     }
 
-    public VehicleQueryResponse query(String plate, String renavam) {
+    public VehicleQueryResponse query(String plate, String renavam, String bearer, String userId) {
+        var session = new VehicleQueryRequest.SessionCredentials(bearer, userId);
         return http.post()
                 .uri("/api/detran/queries")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new VehicleQueryRequest(plate, renavam, DEFAULT_TYPES))
+                .body(new VehicleQueryRequest(plate, renavam, DEFAULT_TYPES, session))
                 .exchange((request, response) -> {
                     HttpStatusCode status = response.getStatusCode();
 

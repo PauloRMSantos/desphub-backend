@@ -1,7 +1,7 @@
 package desphub.pds.backend.controllers;
 
 import desphub.pds.backend.dtos.detran.VehicleQueryResponse;
-import desphub.pds.backend.integrations.RpaDetranClient;
+import desphub.pds.backend.services.VehicleQueryService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,10 +15,10 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/vehicles")
 public class VehicleQueryController {
 
-    private final RpaDetranClient rpaDetranClient;
+    private final VehicleQueryService vehicleQueryService;
 
-    public VehicleQueryController(RpaDetranClient rpaDetranClient) {
-        this.rpaDetranClient = rpaDetranClient;
+    public VehicleQueryController(VehicleQueryService vehicleQueryService) {
+        this.vehicleQueryService = vehicleQueryService;
     }
 
     // GET /api/vehicles/query?plate=ABC1234&renavam=2345
@@ -29,7 +29,7 @@ public class VehicleQueryController {
         if (isBlank(plate) && isBlank(renavam)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe placa ou renavam");
         }
-        return ResponseEntity.ok(rpaDetranClient.query(plate, renavam));
+        return ResponseEntity.ok(vehicleQueryService.query(plate, renavam));
     }
 
     private static boolean isBlank(String value) {

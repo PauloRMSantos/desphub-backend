@@ -40,6 +40,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 Claims claims = jwtService.parse(header.substring(7));
 
+                if (JwtService.TYPE_PAIRING.equals(claims.get("type", String.class))) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
                 Long userId = Long.valueOf(claims.getSubject());
                 Number officeIdClaim = claims.get("officeId", Number.class);
                 Long officeId = officeIdClaim != null ? officeIdClaim.longValue() : null;
