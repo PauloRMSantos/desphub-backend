@@ -1,0 +1,84 @@
+# DespHub — orquestração do BACKEND na VPS.
+#
+# Sobe Postgres (interno) + backend Spring Boot. O backend entra na MESMA rede
+# do RPA (desphub-net) e o alcança por http://desphub-rpa:8080. O Postgres fica
+# numa rede privada só do backend (desphub-db), sem porta publicada.
+#
+# Pré-requisito: a rede desphub-net já deve existir (criada pelo compose do RPA).
+# Se ainda não existir, crie uma vez:
+#   docker network create desphub-net
+#
+# Uso (na VPS, a partir da raiz do repo do backend):
+#   cp deploy/.env.example deploy/.env   # e preencha os segredos
+#   docker compose -f deploy/docker-compose.yml up -d --build
+#   docker compose -f deploy/docker-compose.yml logs -f desphub-backend
+
+name: desphub-backend
+
+services:
+  desphub-postgres:
+    image: postgres:17
+    container_name: desphub-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-desphub}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?defina em deploy/.env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-desphub}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - desphub-db
+
+  desphub-backend:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: desphub-backend:latest
+    container_name: desphub-backend
+    restart: unless-stopped
+    depends_on:
+      desphub-postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://desphub-postgres:5432/${DB_NAME:-desphub}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?defina em deploy/.env}
+      SPRING_JPA_SHOW_SQL: "false"
+
+      RPA_BASE_URL: http://desphub-rpa:8080
+      RPA_SESSION_TOKEN_APIKEY: ${SESSION_TOKEN_APIKEY:?defina em deploy/.env}
+
+      DESPHUB_JWT_SECRET: ${JWT_SECRET:?defina em deploy/.env}
+      DESPHUB_JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-480}
+      DESPHUB_JWT_PAIRING_EXPIRATION_MINUTES: ${JWT_PAIRING_EXPIRATION_MINUTES:-5}
+      DESPHUB_CRYPTO_SECRET: ${CRYPTO_SECRET:?defina em deploy/.env}
+      DESPHUB_CRYPTO_SALT: ${CRYPTO_SALT:?defina em deploy/.env}
+
+      DESPHUB_CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://app.desphub.com,chrome-extension://*}
+
+      JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75}
+    ports:
+      # nginx roda no HOST e faz TLS na 443, repassando pra cá.
+      # Amarrado a 127.0.0.1: a porta NÃO fica exposta na internet, só o
+      # nginx local alcança (proxy_pass http://127.0.0.1:8080).
+      # -> Se o nginx rodar em CONTAINER, remova este bloco inteiro, coloque o
+      #    nginx na desphub-net e aponte pra http://desphub-backend:8080.
+      - "127.0.0.1:${BACKEND_PORT:-8080}:8080"
+    networks:
+      - desphub-db
+      - desphub-net
+
+volumes:
+  postgres_data:
+
+networks:
+  desphub-db:
+    name: desphub-db
+  desphub-net:
+    external: true
+    name: desphub-net

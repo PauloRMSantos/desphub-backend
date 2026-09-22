@@ -1,0 +1,9 @@
+target/
+.idea/
+.git/
+.mvn/wrapper/*.jar
+*.iml
+HELP.md
+README.md
+RPA_MULTITENANCY_HANDOFF.md
+deploy/.env
