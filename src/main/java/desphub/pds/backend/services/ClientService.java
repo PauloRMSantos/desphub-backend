@@ -32,6 +32,7 @@ public class ClientService {
     public ClientResponseDTO create(CreateClientDTO dto) {
         Client client = clientMapper.toEntity(dto);
         client.setOfficeId(currentUser.requireOfficeId());
+        normalizeCpfCnpj(client);
         return clientMapper.toResponse(clientRepository.save(client));
     }
 
@@ -52,6 +53,7 @@ public class ClientService {
     public ClientResponseDTO update(Long id, UpdateClientDTO dto) {
         Client client = findEntityOr404(id);
         clientMapper.updateEntity(dto, client);
+        normalizeCpfCnpj(client);
         return clientMapper.toResponse(clientRepository.save(client));
     }
 
@@ -66,6 +68,13 @@ public class ClientService {
             return clientRepository.findById(id).orElseThrow(() -> notFound(id));
         }
         return clientRepository.findByIdAndOfficeId(id, currentUser.officeId()).orElseThrow(() -> notFound(id));
+    }
+
+    // CPF/CNPJ em branco vira null, para não colidir no índice único (vazios não são duplicados)
+    private void normalizeCpfCnpj(Client client) {
+        if (client.getCpfCnpj() != null && client.getCpfCnpj().isBlank()) {
+            client.setCpfCnpj(null);
+        }
     }
 
     private ResponseStatusException notFound(Long id) {
