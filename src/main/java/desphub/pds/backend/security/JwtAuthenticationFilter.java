@@ -40,7 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 Claims claims = jwtService.parse(header.substring(7));
 
-                if (JwtService.TYPE_PAIRING.equals(claims.get("type", String.class))) {
+                if (claims.get("type", String.class) != null) {
                     filterChain.doFilter(request, response);
                     return;
                 }

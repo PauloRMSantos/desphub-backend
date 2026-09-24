@@ -7,9 +7,12 @@ import desphub.pds.backend.enums.UserRole;
 import desphub.pds.backend.mappers.UserMapper;
 import desphub.pds.backend.models.Office;
 import desphub.pds.backend.models.User;
+import desphub.pds.backend.integrations.EmailService;
 import desphub.pds.backend.repositories.IOfficeRepository;
 import desphub.pds.backend.repositories.IUserRepository;
 import desphub.pds.backend.security.CurrentUser;
+import desphub.pds.backend.security.JwtService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -28,17 +31,26 @@ public class UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final CurrentUser currentUser;
+    private final JwtService jwtService;
+    private final EmailService emailService;
+    private final String resetUrlBase;
 
     public UserService(IUserRepository userRepository,
                        IOfficeRepository officeRepository,
                        UserMapper userMapper,
                        PasswordEncoder passwordEncoder,
-                       CurrentUser currentUser) {
+                       CurrentUser currentUser,
+                       JwtService jwtService,
+                       EmailService emailService,
+                       @Value("${desphub.app.reset-url-base}") String resetUrlBase) {
         this.userRepository = userRepository;
         this.officeRepository = officeRepository;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.currentUser = currentUser;
+        this.jwtService = jwtService;
+        this.emailService = emailService;
+        this.resetUrlBase = resetUrlBase;
     }
 
     @Transactional
@@ -96,6 +108,15 @@ public class UserService {
     public void delete(Long officeId, Long userId) {
         User user = findManageableOr404(officeId, userId);
         userRepository.delete(user);
+    }
+
+    @Transactional(readOnly = true)
+    public void triggerPasswordReset(Long officeId, Long userId) {
+        User user = findManageableOr404(officeId, userId);
+        String token = jwtService.generatePasswordResetToken(user);
+        String separator = resetUrlBase.contains("?") ? "&" : "?";
+        String link = resetUrlBase + separator + "token=" + token;
+        emailService.sendPasswordReset(user.getEmail(), user.getName(), link);
     }
 
     // Admin cria qualquer papel em qualquer escritório; owner só cria EMPLOYEE no próprio.

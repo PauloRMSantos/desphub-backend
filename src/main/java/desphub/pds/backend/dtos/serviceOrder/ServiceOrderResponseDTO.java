@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 
 @Getter
@@ -21,5 +22,6 @@ public class ServiceOrderResponseDTO {
     private BigDecimal servicesTotal;
     private BigDecimal feesTotal;
     private BigDecimal total;
+    private Instant createdAt;
     private List<ServiceOrderItemResponseDTO> items;
 }

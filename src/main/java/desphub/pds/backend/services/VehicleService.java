@@ -40,6 +40,7 @@ public class VehicleService {
         Vehicle vehicle = vehicleMapper.toEntity(dto);
         vehicle.setOfficeId(currentUser.requireOfficeId());
         vehicle.setClient(resolveClient(dto.getClientId()));
+        normalizePlate(vehicle);
         return vehicleMapper.toResponse(vehicleRepository.save(vehicle));
     }
 
@@ -60,6 +61,7 @@ public class VehicleService {
         Vehicle vehicle = findEntityOr404(id);
         vehicleMapper.updateEntity(dto, vehicle);
         vehicle.setClient(resolveClient(dto.getClientId()));
+        normalizePlate(vehicle);
         return vehicleMapper.toResponse(vehicleRepository.save(vehicle));
     }
 
@@ -83,6 +85,13 @@ public class VehicleService {
             return vehicleRepository.findById(id).orElseThrow(() -> notFound(id));
         }
         return vehicleRepository.findByIdAndOfficeId(id, currentUser.officeId()).orElseThrow(() -> notFound(id));
+    }
+
+    // placa em branco vira null (veículo 0 km sem placa); evita colisão de vazios no índice único
+    private void normalizePlate(Vehicle vehicle) {
+        if (vehicle.getPlate() != null && vehicle.getPlate().isBlank()) {
+            vehicle.setPlate(null);
+        }
     }
 
     private ResponseStatusException notFound(Long id) {

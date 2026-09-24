@@ -54,6 +54,12 @@ public class UserController {
         return ResponseEntity.ok(userService.setActive(officeId, userId, request.active()));
     }
 
+    @PostMapping("/{userId}/password-reset")
+    public ResponseEntity<Void> sendPasswordReset(@PathVariable Long officeId, @PathVariable Long userId) {
+        userService.triggerPasswordReset(officeId, userId);
+        return ResponseEntity.accepted().build();
+    }
+
     @DeleteMapping("/{userId}")
     public ResponseEntity<Void> delete(@PathVariable Long officeId, @PathVariable Long userId) {
         userService.delete(officeId, userId);
