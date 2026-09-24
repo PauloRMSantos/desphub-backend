@@ -36,6 +36,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/login",
+                                "/api/auth/reset-password",
                                 "/api/rpa/govbr-session",  // autenticado pelo pairing token, validado no controller
                                 "/error",
                                 "/swagger-ui/**",
