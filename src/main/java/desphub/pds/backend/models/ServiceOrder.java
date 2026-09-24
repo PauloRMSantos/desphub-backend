@@ -5,9 +5,11 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 import desphub.pds.backend.enums.OrderStatusEnum;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Filter;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,6 +56,10 @@ public class ServiceOrder {
 
     @Column(name = "total", precision = 12, scale = 2)
     private BigDecimal total;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
 
     public void addItem(ServiceOrderItem item) {
         items.add(item);
