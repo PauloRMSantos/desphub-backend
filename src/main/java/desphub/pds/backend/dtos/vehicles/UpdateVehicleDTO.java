@@ -1,5 +1,6 @@
 package desphub.pds.backend.dtos.vehicles;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,8 +25,15 @@ public class UpdateVehicleDTO {
 
     private String renavam;
 
-    @NotBlank
     private String chassis;
 
     private Long clientId;
+
+    // Chassi é obrigatório apenas quando o veículo não tem placa (ex.: 0 km).
+    @AssertTrue(message = "Informe o chassi quando o veículo não tiver placa")
+    public boolean isChassisPresentWhenNoPlate() {
+        boolean hasPlate = plate != null && !plate.isBlank();
+        boolean hasChassis = chassis != null && !chassis.isBlank();
+        return hasPlate || hasChassis;
+    }
 }
