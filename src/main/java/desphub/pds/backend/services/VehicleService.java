@@ -40,7 +40,7 @@ public class VehicleService {
         Vehicle vehicle = vehicleMapper.toEntity(dto);
         vehicle.setOfficeId(currentUser.requireOfficeId());
         vehicle.setClient(resolveClient(dto.getClientId()));
-        normalizePlate(vehicle);
+        normalizeIdentifiers(vehicle);
         return vehicleMapper.toResponse(vehicleRepository.save(vehicle));
     }
 
@@ -61,7 +61,7 @@ public class VehicleService {
         Vehicle vehicle = findEntityOr404(id);
         vehicleMapper.updateEntity(dto, vehicle);
         vehicle.setClient(resolveClient(dto.getClientId()));
-        normalizePlate(vehicle);
+        normalizeIdentifiers(vehicle);
         return vehicleMapper.toResponse(vehicleRepository.save(vehicle));
     }
 
@@ -87,10 +87,14 @@ public class VehicleService {
         return vehicleRepository.findByIdAndOfficeId(id, currentUser.officeId()).orElseThrow(() -> notFound(id));
     }
 
-    // placa em branco vira null (veículo 0 km sem placa); evita colisão de vazios no índice único
-    private void normalizePlate(Vehicle vehicle) {
+    // placa/chassi em branco viram null; evita colisão de vazios nos índices únicos por escritório.
+    // (0 km pode não ter placa; a exigência de chassi sem placa é validada no DTO)
+    private void normalizeIdentifiers(Vehicle vehicle) {
         if (vehicle.getPlate() != null && vehicle.getPlate().isBlank()) {
             vehicle.setPlate(null);
+        }
+        if (vehicle.getChassis() != null && vehicle.getChassis().isBlank()) {
+            vehicle.setChassis(null);
         }
     }
 

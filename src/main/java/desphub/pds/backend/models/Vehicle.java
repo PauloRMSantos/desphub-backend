@@ -36,7 +36,7 @@ public class Vehicle {
 
     private String renavam;
 
-    @NotBlank
+    // Opcional: exigido só quando não há placa (validação no DTO). Veículo 0 km pode ter chassi sem placa.
     private String chassis;
 
     @ManyToOne(fetch = FetchType.LAZY)

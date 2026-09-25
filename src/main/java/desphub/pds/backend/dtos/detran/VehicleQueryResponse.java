@@ -13,6 +13,7 @@ public record VehicleQueryResponse(
         Licensing licensing,
         Violations violations,
         List<Restriction> restrictions,
+        List<SpecialCharacteristic> specialCharacteristics, // ex.: "Recuperado de sinistro"
         List<TaxEntry> taxes,      // histórico completo de IPVA (todos os anos)
         List<Debt> debts,          // só o que está devido agora (IPVA + DPVAT)
         String status,
