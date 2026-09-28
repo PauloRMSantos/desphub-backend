@@ -1,5 +1,6 @@
 package desphub.pds.backend.models;
 
+import desphub.pds.backend.enums.PartyRole;
 import desphub.pds.backend.enums.VariableSource;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -33,4 +34,9 @@ public class TemplateVariable {
 
     @Column(nullable = false)
     private boolean required;
+
+    // papel na procuração (OUTORGANTE/OUTORGADO); nulo para variáveis comuns
+    @Enumerated(EnumType.STRING)
+    @Column(name = "party_role")
+    private PartyRole partyRole;
 }

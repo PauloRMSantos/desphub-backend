@@ -5,6 +5,7 @@ import desphub.pds.backend.dtos.templates.TemplateResponseDTO;
 import desphub.pds.backend.dtos.templates.TemplateSummaryDTO;
 import desphub.pds.backend.dtos.templates.TemplateVariableDTO;
 import desphub.pds.backend.dtos.templates.VariableCatalogEntryDTO;
+import desphub.pds.backend.enums.PartyRole;
 import desphub.pds.backend.enums.TemplateCategory;
 import desphub.pds.backend.enums.VariableSource;
 import desphub.pds.backend.mappers.TemplateMapper;
@@ -39,6 +40,7 @@ public class TemplateService {
     @Transactional
     public TemplateResponseDTO create(CreateTemplateDTO dto) {
         validateVariables(dto);
+        validateProcuracaoParties(dto);
         DocumentTemplate template = new DocumentTemplate();
         template.setOfficeId(currentUser.requireOfficeId());
         template.setCreatedByUserId(currentUser.get().userId());
@@ -62,6 +64,7 @@ public class TemplateService {
     @Transactional
     public TemplateResponseDTO update(Long id, CreateTemplateDTO dto) {
         validateVariables(dto);
+        validateProcuracaoParties(dto);
         DocumentTemplate template = findEntityOr404(id);
         templateMapper.apply(dto, template);
         return templateMapper.toResponse(templateRepository.save(template));
@@ -75,6 +78,28 @@ public class TemplateService {
     @Transactional(readOnly = true)
     public List<VariableCatalogEntryDTO> variableCatalog() {
         return variableCatalog.catalog();
+    }
+
+    // toda procuração precisa ter, obrigatoriamente, um OUTORGANTE e um OUTORGADO
+    private void validateProcuracaoParties(CreateTemplateDTO dto) {
+        if (dto.category() != TemplateCategory.PROCURACAO) {
+            return;
+        }
+        boolean hasOutorgante = false;
+        boolean hasOutorgado = false;
+        if (dto.variables() != null) {
+            for (TemplateVariableDTO v : dto.variables()) {
+                if (v.partyRole() == PartyRole.OUTORGANTE) {
+                    hasOutorgante = true;
+                } else if (v.partyRole() == PartyRole.OUTORGADO) {
+                    hasOutorgado = true;
+                }
+            }
+        }
+        if (!hasOutorgante || !hasOutorgado) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Toda procuração precisa ter uma variável marcada como OUTORGANTE e outra como OUTORGADO");
+        }
     }
 
     private void validateVariables(CreateTemplateDTO dto) {

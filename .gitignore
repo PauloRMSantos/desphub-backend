@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Config local com segredos (usar .env.example como modelo)
+.env

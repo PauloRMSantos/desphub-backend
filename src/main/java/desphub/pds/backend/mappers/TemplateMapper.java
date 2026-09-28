@@ -65,6 +65,7 @@ public class TemplateMapper {
                 variable.setSource(v.source());
                 variable.setSourceField(v.sourceField());
                 variable.setRequired(Boolean.TRUE.equals(v.required()));
+                variable.setPartyRole(v.partyRole());
                 entity.addVariable(variable);
             }
         }
@@ -109,7 +110,7 @@ public class TemplateMapper {
 
         List<TemplateVariableDTO> variables = e.getVariables().stream()
                 .map(v -> new TemplateVariableDTO(v.getVarKey(), v.getLabel(), v.getSource(),
-                        v.getSourceField(), v.isRequired()))
+                        v.getSourceField(), v.isRequired(), v.getPartyRole()))
                 .toList();
 
         return new TemplateResponseDTO(e.getId(), e.getName(), e.getCategory(), e.isActive(),
