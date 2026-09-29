@@ -42,7 +42,7 @@ public class UserService {
                        CurrentUser currentUser,
                        JwtService jwtService,
                        EmailService emailService,
-                       @Value("${desphub.app.reset-url-base}") String resetUrlBase) {
+                       @Value("${desphub.app.reset-url-base:http://localhost:3000/reset-password}") String resetUrlBase) {
         this.userRepository = userRepository;
         this.officeRepository = officeRepository;
         this.userMapper = userMapper;

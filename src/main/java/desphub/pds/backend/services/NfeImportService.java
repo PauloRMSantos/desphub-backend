@@ -18,20 +18,11 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Importa dados de NF-e para PRÉ-PREENCHER um veículo (não persiste nada).
- *
- * - Chave de acesso: só carrega metadados (emitente, UF, data, número).
- * - PDF (DANFE): extrai a chave e, quando o emissor imprime o bloco de dados do
- *   veículo com rótulos (MARCA/MODELO, CHASSI, RENAVAM, COR, ANO...), preenche
- *   também marca, modelo, chassi, cor, renavam e ano. Layouts variam, então o
- *   que não casar vira aviso.
- */
 @Service
 public class NfeImportService {
 
-    // Chave de 44 dígitos (aplicado ao texto já sem espaços e pontos)
     private static final Pattern ACCESS_KEY_44 = Pattern.compile("\\d{44}");
+    private static final Pattern ACCESS_KEY_GROUPED = Pattern.compile("\\d{4}(?:[\\s.]\\d{4}){10}");
     // VIN/chassi tem 17 caracteres e não usa I, O, Q
     private static final Pattern CHASSIS = Pattern.compile("(?i)chassi[^A-Z0-9]{0,12}([A-HJ-NPR-Z0-9]{17})");
     private static final Pattern RENAVAM = Pattern.compile("(?i)renavam[^0-9]{0,12}(\\d{5,11})");
@@ -39,6 +30,15 @@ public class NfeImportService {
     private static final Pattern COLOR = Pattern.compile("(?im)^\\s*cor\\s*[:\\-]\\s*([^\\r\\n]+)");
     private static final Pattern YEAR_MODEL_FAB =
             Pattern.compile("(?i)ano\\s*modelo\\s*/\\s*fabricacao\\s*[:\\-]?\\s*(\\d{4})\\s*/\\s*(\\d{4})");
+
+    private static final Pattern BRAND_MODEL_INLINE =
+            Pattern.compile("(?i)(\\p{L}[\\p{L}&]{1,})\\s*/\\s*([\\p{L}0-9][\\p{L}0-9 .]*?)\\s*-\\s*ano\\b");
+    private static final Pattern COLOR_INLINE =
+            Pattern.compile("(?i)\\bcor\\b\\s*[:\\-]?\\s*(\\p{L}+(?:\\s+\\p{L}+){0,2})");
+    private static final Pattern YEAR_FAB_MOD =
+            Pattern.compile("(?i)ano\\s*fab\\w*\\.?\\s*[:\\-]?\\s*(\\d{4})[\\s\\S]{0,25}?ano\\s*mod\\w*\\.?\\s*[:\\-]?\\s*(\\d{4})");
+    private static final Pattern PLATE_INLINE =
+            Pattern.compile("(?i)placas?\\s*[:\\-]?\\s*([A-Z]{3}[0-9][A-Z0-9][0-9]{2})");
 
     private static final Map<Integer, String> STATE_BY_CODE = Map.ofEntries(
             Map.entry(11, "RO"), Map.entry(12, "AC"), Map.entry(13, "AM"), Map.entry(14, "RR"),
@@ -79,7 +79,26 @@ public class NfeImportService {
             vehicle.setFabricationAndModel(manufactureYear + "/" + modelYear); // fabricação/modelo
         }
 
-        // avisa só sobre o que ficou faltando
+        if (vehicle.getColor() == null) {
+            firstGroup(COLOR_INLINE, text).ifPresent(v -> vehicle.setColor(v.trim()));
+        }
+        if (vehicle.getBrand() == null) {
+            Matcher bm = BRAND_MODEL_INLINE.matcher(text);
+            if (bm.find()) {
+                vehicle.setBrand(bm.group(1).trim());
+                vehicle.setModel(bm.group(2).trim());
+            }
+        }
+        if (vehicle.getFabricationAndModel() == null) {
+            Matcher ym = YEAR_FAB_MOD.matcher(text);
+            if (ym.find()) {
+                vehicle.setFabricationAndModel(ym.group(1) + "/" + ym.group(2)); // fabricação/modelo
+            }
+        }
+        if (vehicle.getPlate() == null) {
+            firstGroup(PLATE_INLINE, text).ifPresent(v -> vehicle.setPlate(v.toUpperCase()));
+        }
+
         List<String> missing = new ArrayList<>();
         if (vehicle.getBrand() == null) missing.add("marca");
         if (vehicle.getModel() == null) missing.add("modelo");
@@ -97,7 +116,6 @@ public class NfeImportService {
 
     // ----- helpers -----
 
-    // "CHEVROLET/ONIX 1.0 MT - 5A48AV" -> marca "CHEVROLET", modelo "ONIX 1.0 MT - 5A48AV"
     private void applyBrandModel(CreateVehicleDTO vehicle, String value) {
         String[] parts = value.split("/", 2);
         vehicle.setBrand(parts[0].trim());
@@ -119,25 +137,34 @@ public class NfeImportService {
         }
     }
 
-    /**
-     * Procura uma sequência de 44 dígitos; prefere a que tem DV válido.
-     * Remove espaços E pontos, porque a DANFE costuma imprimir a chave em grupos
-     * separados por ponto (ex.: 4326.0903.3597...).
-     */
     private String findAccessKey(String text) {
-        String digits = text.replaceAll("[\\s.]", "");
-        Matcher matcher = ACCESS_KEY_44.matcher(digits);
-        String first = null;
-        while (matcher.find()) {
-            String candidate = matcher.group();
-            if (first == null) {
-                first = candidate;
+        String groupedFallback = null;
+        Matcher grouped = ACCESS_KEY_GROUPED.matcher(text);
+        while (grouped.find()) {
+            String candidate = grouped.group().replaceAll("\\D", "");
+            if (candidate.length() != 44) {
+                continue;
             }
             if (isCheckDigitValid(candidate)) {
                 return candidate;
             }
+            if (groupedFallback == null) {
+                groupedFallback = candidate;
+            }
         }
-        return first; // nenhuma com DV válido; devolve a primeira (será marcada como inválida)
+
+        String digits = text.replaceAll("\\D", "");
+        for (int i = 0; i + 44 <= digits.length(); i++) {
+            String candidate = digits.substring(i, i + 44);
+            if (isCheckDigitValid(candidate)) {
+                return candidate;
+            }
+        }
+        if (groupedFallback != null) {
+            return groupedFallback;
+        }
+        Matcher any = ACCESS_KEY_44.matcher(digits);
+        return any.find() ? any.group() : null;
     }
 
     private NfeAccessKeyInfo decompose(String accessKey) {
