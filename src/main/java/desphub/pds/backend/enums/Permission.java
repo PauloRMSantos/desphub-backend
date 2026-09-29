@@ -15,5 +15,9 @@ public enum Permission {
     FINANCIAL_WRITE,
     VEHICLE_QUERY,   // consulta detran
     NFE_IMPORT,
+    TEMPLATES_READ,
+    TEMPLATES_WRITE,
+    DOCUMENTS_READ,
+    DOCUMENTS_WRITE,
     USERS_MANAGE
 }
