@@ -140,6 +140,11 @@ public class DocumentGenerationService {
         return pdfRenderer.render(findEntityOr404(id).getResolvedContent());
     }
 
+    @Transactional
+    public void delete(Long id) {
+        generatedRepository.delete(findEntityOr404(id));
+    }
+
     private void validateSelection(DocumentTemplate template, Set<Long> selected) {
         Map<Long, ClauseBlock> byId = template.getBlocks().stream()
                 .collect(Collectors.toMap(ClauseBlock::getId, b -> b));
